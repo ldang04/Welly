@@ -1,0 +1,354 @@
+const express = require("express");
+const mongoose = require("mongoose"); 
+const bodyParser = require("body-parser");
+
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = "mongodb+srv://wellyadmin:WellyPa552024@cluster0.d1vcezb.mongodb.net/?retryWrites=true&w=majority";
+
+// import model schemas 
+const User = require("./models/User"); 
+const Post = require("./models/Post"); 
+const Group = require("./models/Group");
+const Goal = require("./models/Goal");
+
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
+
+const app = express(); 
+
+// connect mongoose 
+mongoose.connect('mongodb+srv://wellyadmin:WellyPa552024@cluster0.d1vcezb.mongodb.net/welly'); 
+
+// create application/json parser
+const jsonParser = bodyParser.json(); 
+
+// create application/x-www-form-urlencoded parser
+var urlencodedParser = bodyParser.urlencoded({ extended: false }); 
+
+// User routes =======================================================================================================================
+/**
+ * @route GET /user/:user_id 
+ * @desc Get all user information
+ * @access Public
+ */
+app.get("/users/:user_id", async (req, res) => {
+    try {
+      // find user
+        await User.findOne({ _id: req.params.user_id })
+        .populate("friends", ["username"])
+        .populate("groups", "name")
+        .exec()
+        .then( user => {
+          if(!user){
+            return res.status(404).json({ message: "User not found"});
+          } 
+          res.status(200).json(user); // return user
+        })
+        .catch(err => {
+          return res.status(404).json({ message: "Something went wrong"}); 
+        }); 
+    } catch(err) {
+        console.log(err.message);
+        res.status(500).json({message: 'Server Error'});
+    }
+}); 
+
+/**
+ * @route GET /users/:user_id/posts
+ * @desc Get all posts belonging to a user
+ * @access Public
+ */
+app.get("/users/:user_id/posts", async (req, res) => {
+  try {
+      let posts = await Post.find({ creator: req.params.user_id })
+      .then(posts => {
+        if(!posts){
+          return res.status(200).json({ posts: [] })
+        }
+
+        return res.status(200).json({ posts: posts })
+      })
+  } catch(err){
+    console.log(err.message); 
+    res.status(500).json({ message: "Server error"}); 
+  }
+})
+
+/**
+ * @route POST /users/:user_id/friend
+ * @desc Add a friend
+ * @access Public
+ */
+
+app.post("/users/:user_id/friend", jsonParser, async (req,res) => {
+  try {
+    const user = await User.findOne({ _id: req.params.user_id }); 
+
+    // add friend 
+    const friend = await User.findOne({ _id: req.body.friend_id }).then(async friend => {
+      if(!friend){
+        return res.status(404).json({ message: "Friend not found"})
+      }
+
+      user.friends.push(new mongoose.Types.ObjectId(req.body.friend_id)); 
+      friend.friends.push(new mongoose.Types.ObjectId(req.body.friend_id)); 
+
+      await user.save(); 
+      await friend.save(); 
+
+      res.status(200).json({ message: "Added a friend"}); 
+    })
+  } catch(err){
+    console.log(err.message); 
+    res.status(500).json({ message: "Server Error"}); 
+  }
+}); 
+
+// Group routes =======================================================================================================================
+/**
+ * @route POST /group
+ * @desc Create a group
+ * @access Public
+ */
+app.post("/group", jsonParser, async (req, res) => {
+  try {
+    const groupData = { 
+      name: req.body.name
+    }; 
+
+    const group = new Group(groupData);
+    await group.save(); 
+
+    res.status(200).json({message: "Group created"});
+  } catch(err){
+    console.log(err.message); 
+    res.status(500).json({ message: "Server error"})
+  }
+}); 
+
+/**
+ * @route GET /group/:group_id/posts
+ * @desc Get all posts within a group
+ * @access Public
+ */
+app.get("/group/:group_id/posts", async (req, res) => {
+  try {
+      let posts = await Post.find({ group: req.params.group_id })
+      .then(posts => {
+        if(!posts){
+          return res.status(200).json({ posts: [] })
+        }
+
+        return res.status(200).json({ posts: posts })
+      })
+  } catch(err){
+    console.log(err.message); 
+    res.status(500).json({ message: "Server error"}); 
+  }
+});
+
+/**
+ * @route GET /group/:group_id
+ * @desc Get all information about a group
+ * @access Public
+ */
+/**
+ * @route GET /user/:user_id 
+ * @desc Get all user information
+ * @access Public
+ */
+app.get("/group/:group_id", async (req, res) => {
+  try {
+    // find user
+      await Group.findOne({ _id: req.params.group_id })
+      .populate("members", ["username"])
+      .exec()
+      .then( group => {
+        if(!group){
+          return res.status(404).json({ message: "Group not found"});
+        } 
+        res.status(200).json(group); // return user
+      })
+      .catch(err => {
+        return res.status(404).json({ message: "Something went wrong"}); 
+      }); 
+  } catch(err) {
+      console.log(err.message);
+      res.status(500).json({message: 'Server Error'});
+  }
+}); 
+
+/**
+ * @route POST /group/:group_id/join
+ * @desc Join a group
+ * @access Public
+ */
+app.post("/group/:group_id/join", jsonParser, async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.body.user_id }); 
+    
+    let group = await Group.findOne({ _id: req.params.group_id})
+    .then(async group => {
+      if(!group){
+        return res.status(404).json({ message: "Group not found"}); 
+      } 
+
+      user.groups.push(new mongoose.Types.ObjectId(req.params.group_id));
+      group.members.push(new mongoose.Types.ObjectId(req.body.user_id)); 
+      
+      console.log(group); 
+      console.log(user); 
+
+      await user.save()
+      await group.save() 
+      
+      return res.status(200).json({ message: "Successfully joined group"}); 
+    })
+
+  } catch(err){
+    console.log(err.message)
+    res.status(500).json({ message: "Server error"}); 
+  }
+}); 
+
+/**
+ * @route POST /group/:group_id
+ * @desc Edit a group
+ * @access Public
+ */
+
+app.post("/group/:group_id", jsonParser, async (req, res) => {
+  try {
+    await Group.findOne({ _id: req.params.group_id })
+    .then(async group => {
+      if(!group){
+        return res.status(404).json({ message: "Group not found"}); 
+      }
+      
+      group.name = req.body.name 
+      group.pledge = req.body.pledge 
+
+      await group.save(); 
+      res.status(200).json({ message: "Group updated"})
+    })
+  } catch(err){
+    res.status(500).json({ message: "Server Error"}); 
+  }
+})
+// post routes ========================================================**
+/* @route POST /users/:user_id/friend
+* @desc Add a friend
+* @access Public
+*/
+app.post("/users/:user_id/friend", jsonParser, async (req,res) => {
+ try {
+   const user = await User.findOne({ _id: req.params.user_id }); 
+
+   // add friend 
+   const friend = await User.findOne({ _id: req.body.friend_id }).then(async friend => {
+     if(!friend){
+       return res.status(404).json({ message: "Friend not found"})
+     }
+
+     user.friends.push(new mongoose.Types.ObjectId(req.body.friend_id)); 
+     friend.friends.push(new mongoose.Types.ObjectId(req.body.friend_id)); 
+
+     await user.save(); 
+     await friend.save(); 
+
+     res.status(200).json({ message: "Added a friend"}); 
+   })
+ } catch(err){
+   console.log(err.message); 
+   res.status(500).json({ message: "Server Error"}); 
+ }
+}); 
+
+// Post routes =====================================================================================================================================================
+/**
+ * @route POST /posts
+ * @desc Post a post to the database
+ * @access Public
+ */
+app.post("/groups/:group_id/posts", jsonParser, async (req, res) => {
+  try {
+    // IMPORTANT: in the absence of auth, API calls must specify the creator directly
+    const postData = {
+      creator: req.body.creator, 
+      photo: req.body.photo, 
+      task: req.body.task, 
+      group: new mongoose.Types.ObjectId(req.params.group_id)
+    }
+
+    if(req.body.public){ // if visibility is specified
+      postData.public = req.body.public
+    }
+
+    // save to database 
+    const post = new Post(postData); 
+    await post.save(); 
+
+    res.status(200).json({ message: "Posted" });
+  } catch(err){
+    console.log(err.message); 
+    res.status(500).json({ message: "Server Error"});
+  }
+}); 
+
+// TEMPORARY ROUTES =============================================================================================================
+/**
+ * @route GET /
+ * @desc Test route
+ * @access Public
+ */
+
+app.get("/", (req, res) => {
+  res.send("Hello, World"); 
+}); 
+
+// temporary: create a new user
+app.post("/users", jsonParser, async (req, res) => {
+  try {
+    const userData = { 
+      username: req.body.username
+    }; 
+
+    const user = new User(userData);
+    await user.save(); 
+
+    res.status(200).json({ message: "User created"}); 
+  } catch(err){
+    console.log(err.message); 
+    res.status(500).json({ message: "Server error"}); 
+  }
+}); 
+
+// ======================================================================================================================================================================================================
+
+const PORT = process.env.PORT || 4000; 
+
+// Connect database 
+async function run() {
+    try {
+      // Connect the client to the server	(optional starting in v4.7)
+      await client.connect();
+      // Send a ping to confirm a successful connection
+      await client.db("admin").command({ ping: 1 });
+      console.log("⋆⭒˚｡⋆ Database connected! ✩₊˚.⋆☾⋆⁺₊✧");
+    } finally {
+      // Ensures that the client will close when you finish/error
+      await client.close();
+    }
+  }
+  
+  run().catch(console.dir);
+
+// Connect server
+app.listen(PORT, () => console.log(`(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧
+ Server running on port ${PORT}`));

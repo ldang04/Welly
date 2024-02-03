@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+  display: flex;
+  justify-content: center;
+  height: 100vh;
+  align-items: center;
+}
+
+.wrap{
+	height: 800px;
+	width: 393px;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: start;
+}
+.feedBox{
+	height: 605px;
+	width: 100%;
+	overflow-y: scroll;
+	margin-top: 20px;
+	padding-bottom: 70px;
+}
+.friendsBox{
+	height: 625px;
+	overflow-y: scroll;
+	margin-top: 20px;
+	padding-bottom: 70px;
+}
+.storyBox{
+	width: 352px;
+	overflow-x: scroll;
+	margin-top: 28px;
+	padding-left: 24px;
+	padding-right: 24px;
+}
+.tagbox{
+	width: 352px;
+	overflow-x: scroll;
+	margin-top: 28px;
+	padding-right: 24px;
+}
+.storyBox::-webkit-scrollbar {
+	display: none;
+}
+.feedBox::-webkit-scrollbar {
+	display: none;
+}
+.tagbox::-webkit-scrollbar {
+	display: none;
+}
+.registrationInput{
+	color: #F68D96;
+	width: 256px;
+	height: 56px;
+	border-radius: 8px;
+	text-align: center;
+	padding-left: 12px;
+	padding-right: 12px;
+}
+
+:focus.registrationInput{
+	outline: none;
+}
+
+.registrationButton{
+	background-color: white;
+	color: #F68D96;
+	width: 256px;
+	height: 56px;
+	border-radius: 9px;
+	text-align: center;
+	cursor: pointer;
+	margin-top: 20px;
+	border: 2px solid white;
+}
+
+.registrationArrow{
+	background-color: white;
+	width: 256px;
+	height: 56px;
+	color: #F68D96;
+	border-radius: 9px;
+	margin-top: 20px;
+	cursor: pointer;
+}
+
+:hover.registrationButton {
+	background-color: #F68D96;
+	color: white;
+	transition: 200ms;
+	border: 2px solid white;
+}
+
+:hover.registrationArrow {
+	background-color: #F68D96;
+	color: white;
+	transition: 200ms;
+	border: 2px solid white;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+}
